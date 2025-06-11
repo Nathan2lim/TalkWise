@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    container_name: telegram-bot
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MYSQL_HOST=mysql
+      - MYSQL_DB=chatbot
+      - MYSQL_USER=chatuser
+      - MYSQL_PASSWORD=chatpass
+    depends_on:
+      - redis
+      - mysql
+      - ollama
+    networks:
+      - botnet
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - botnet
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: chatbot
+      MYSQL_USER: chatuser
+      MYSQL_PASSWORD: chatpass
+    ports:
+      - "4004:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - botnet
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    networks:
+      - botnet
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  ollama_models:
+
+networks:
+  botnet:
+    driver: bridge
